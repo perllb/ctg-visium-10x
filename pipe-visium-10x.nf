@@ -3,22 +3,22 @@
 // set variables
 runfolder = params.runfolder
 basedir = params.basedir
-metaID = params.metaid
-OUTDIR = params.outdir
-FQDIR = params.fqdir
-IMDIR = params.imagedir
-CNTDIR = params.countdir
-QCDIR = params.qcdir
-CTGQC = params.ctgqc
-SUMDIR = params.sumdir
-SLIDEREF = params.slideref
+metaid = params.metaid
+outdir = params.outdir
+fqdir = params.fqdir
+imdir = params.imagedir
+cntdir = params.countdir
+qcdir = params.qcdir
+ctgqc = params.ctgqc
+sumdir = params.sumdir
+slideref = params.slideref
 
 // Read and process sample sheet
 sheet = file(params.sheet)
 
 // create new file for reading into channels that provide sample info!
 newsheet = file("$basedir/sample-sheet.nf.csv")
-slidesheet = file("$IMDIR/slide_area.txt")
+slidesheet = file("$imdir/slide_area.txt")
 
 // Read and process sample sheet
 all_lines = sheet.readLines()
@@ -41,18 +41,18 @@ println ""
 println "> INPUT: "
 println "> experiment		: $runfolder "
 println "> sample-sheet		: $sheet "
-println "> project-id		: $metaID "
+println "> project-id		: $metaid "
 println "> basedir		: $basedir "
-println "> imagedir		: $IMDIR "
-println "> slide reference      : $SLIDEREF " 
+println "> imagedir		: $imdir "
+println "> slide reference      : $slideref " 
 println ""
 println "> OUTPUT: "
-println "> output-dir		: $OUTDIR "
-println "> fastq-dir		: $FQDIR "
-println "> count-dir		: $CNTDIR "
-println "> qc-dir		: $QCDIR "
-println "> summary-dir		: $SUMDIR "
-println "> ctg-qc-dir		: $CTGQC "
+println "> output-dir		: $outdir "
+println "> fastq-dir		: $fqdir "
+println "> count-dir		: $cntdir "
+println "> qc-dir		: $qcdir "
+println "> summary-dir		: $sumdir "
+println "> ctg-qc-dir		: $ctgqc "
 println "============================="
 
 // all samplesheet info
@@ -92,20 +92,20 @@ process mkfastq {
 	"""
 	
 	spaceranger mkfastq \
-    --id=$metaID \
+    --id=$metaid \
     --run=$runfolder \
     --samplesheet=$sheet \
     --jobmode=local \
     --localmem=100 \
     --localcores=${task.cpus} \
-    --output-dir $FQDIR 
+    --output-dir $fqdir 
 
 	"""
 }
 
 process count {
 
-	publishDir "${CNTDIR}", mode: "move", overwrite: true
+	publishDir "${cntdir}", mode: "move", overwrite: true
 	tag "$sid"
 
 	input: 
@@ -133,30 +133,30 @@ process count {
 
 	 spaceranger count \
              --id=${sname} \
-             --fastqs=${FQDIR}/$projid/$sid/ \
+             --fastqs=${fqdir}/$projid/$sid/ \
 	     --project=$projid \
              --sample=$sname \
-             --image=${IMDIR}/rotated/${sname}.tif \
-             --slidefile=${SLIDEREF}/${slide}.gpr \
+             --image=${imdir}/rotated/${sname}.tif \
+             --slidefile=${slideref}/${slide}.gpr \
              --slide=$slide \
              --area=$area \
              --transcriptome=\$genome \
              --localcores=${task.cpus} --localmem=130
 
 
-        mkdir -p ${SUMDIR}
-        mkdir -p ${SUMDIR}/cloupe
-        mkdir -p ${SUMDIR}/web-summaries
+        mkdir -p ${sumdir}
+        mkdir -p ${sumdir}/cloupe
+        mkdir -p ${sumdir}/web-summaries
 
-	mkdir -p ${CTGQC}/${projid}
-	mkdir -p ${CTGQC}/${projid}/web-summaries
+	mkdir -p ${ctgqc}/${projid}
+	mkdir -p ${ctgqc}/${projid}/web-summaries
 
 	## Copy to delivery folder 
-        cp ${sname}/outs/web_summary.html ${SUMDIR}/web-summaries/${sname}.web_summary.html
-        cp ${sname}/outs/cloupe.cloupe ${SUMDIR}/cloupe/${sname}_cloupe.cloupe
+        cp ${sname}/outs/web_summary.html ${sumdir}/web-summaries/${sname}.web_summary.html
+        cp ${sname}/outs/cloupe.cloupe ${sumdir}/cloupe/${sname}_cloupe.cloupe
 
 	## Copy to CTG QC dir 
-        cp ${sname}/outs/web_summary.html ${CTGQC}/${projid}/web-summaries/${sname}.web_summary.html
+        cp ${sname}/outs/web_summary.html ${ctgqc}/${projid}/web-summaries/${sname}.web_summary.html
 
 
 	"""
@@ -176,11 +176,11 @@ process fastqc {
 
 	"""
 
-        mkdir -p ${QCDIR}
-        mkdir -p ${QCDIR}/fastqc
+        mkdir -p ${qcdir}
+        mkdir -p ${qcdir}/fastqc
 
-        for file in ${FQDIR}/$projid/$sid/*fastq.gz
-            do fastqc \$file --outdir=${QCDIR}/fastqc
+        for file in ${fqdir}/$projid/$sid/*fastq.gz
+            do fastqc \$file --outdir=${qcdir}/fastqc
         done
 	"""
     
@@ -197,11 +197,11 @@ process multiqc {
 
     script:
     """
-    cd $OUTDIR
-    multiqc . --outdir ${QCDIR}/ -n ${projid}_multiqc_report.html
+    cd $outdir
+    multiqc . --outdir ${qcdir}/ -n ${projid}_multiqc_report.html
 
-    mkdir -p ${CTGQC}/$projid/
-    cp -r ${QCDIR}/ ${CTGQC}/$projid/
+    mkdir -p ${ctgqc}/$projid/
+    cp -r ${qcdir}/ ${ctgqc}/$projid/
 
     """
 }
@@ -217,7 +217,7 @@ process md5sum {
     val "done" into donech
 
     """
-    cd ${OUTDIR} 
+    cd ${outdir} 
     find -type f -exec md5sum '{}' \\; > ctg-md5.${projid}.txt
     """ 
 
