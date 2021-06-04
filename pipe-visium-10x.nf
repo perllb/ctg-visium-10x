@@ -1,22 +1,23 @@
 #!/usr/bin/env nextFlow
 
 // set variables
-exp = params.experiment
-basedir = params.projdir
+runfolder = params.runfolder
+basedir = params.basedir
 metaID = params.metaid
 OUTDIR = params.outdir
 FQDIR = params.fqdir
 IMDIR = params.imagedir
 CNTDIR = params.countdir
 QCDIR = params.qcdir
-CTGQC = params.ctgQC
+CTGQC = params.ctgqc
 SUMDIR = params.sumdir
+SLIDEREF = params.slideref
 
 // Read and process sample sheet
 sheet = file(params.sheet)
 
 // create new file for reading into channels that provide sample info!
-newsheet = file("$basedir/scr/sample-sheet.nf.csv")
+newsheet = file("$basedir/sample-sheet.nf.csv")
 slidesheet = file("$IMDIR/slide_area.txt")
 
 // Read and process sample sheet
@@ -38,11 +39,12 @@ println "============================="
 println ">>> visium-10x pipeline >>>"
 println ""
 println "> INPUT: "
-println "> experiment		: $exp "
+println "> experiment		: $runfolder "
 println "> sample-sheet		: $sheet "
 println "> project-id		: $metaID "
 println "> basedir		: $basedir "
 println "> imagedir		: $IMDIR "
+println "> slide reference      : $SLIDEREF " 
 println ""
 println "> OUTPUT: "
 println "> output-dir		: $OUTDIR "
@@ -50,7 +52,6 @@ println "> fastq-dir		: $FQDIR "
 println "> count-dir		: $CNTDIR "
 println "> qc-dir		: $QCDIR "
 println "> summary-dir		: $SUMDIR "
-println "> aggregate-dir	: $AGGDIR "
 println "> ctg-qc-dir		: $CTGQC "
 println "============================="
 
@@ -92,7 +93,7 @@ process mkfastq {
 	
 	spaceranger mkfastq \
     --id=$metaID \
-    --run=$exp \
+    --run=$runfolder \
     --samplesheet=$sheet \
     --jobmode=local \
     --localmem=100 \
@@ -105,13 +106,15 @@ process mkfastq {
 process count {
 
 	publishDir "${CNTDIR}", mode: "move", overwrite: true
+	tag "$sid"
 
 	input: 
 	val x from  srcount_x
         set sid, sname, projid, ref, name, slide, area from srcount_csv.join(count_slide)
 
 	output:
-        file "${sname}" into samplename
+        file "${sname}/outs/" into samplename
+	val projid into md5_count 
 
 	"""
         if [ $ref == "Human" ] || [ $ref == "human" ]
@@ -133,8 +136,8 @@ process count {
              --fastqs=${FQDIR}/$projid/$sid/ \
 	     --project=$projid \
              --sample=$sname \
-             --image=${IMDIR}/${sname}.90.tif \
-             --slidefile=${IMDIR}/${slide}.gpr \
+             --image=${IMDIR}/rotated/${sname}.tif \
+             --slidefile=${SLIDEREF}/${slide}.gpr \
              --slide=$slide \
              --area=$area \
              --transcriptome=\$genome \
@@ -162,6 +165,8 @@ process count {
 
 process fastqc {
 
+	tag "$sid" 
+
 	input:
 	val x from fqc_x
 	set sid, sname, projid, ref from fastqc_csv	
@@ -188,6 +193,7 @@ process multiqc {
 
     output:
     val "x" into multiqc_outch
+    val projid into md5_qc
 
     script:
     """
@@ -200,3 +206,19 @@ process multiqc {
     """
 }
 
+process md5sum {
+
+    tag "${projid}"
+
+    input:
+    set projid, projid2 from md5_qc.unique().phase(md5_count.unique()) 
+
+    output:
+    val "done" into donech
+
+    """
+    cd ${OUTDIR} 
+    find -type f -exec md5sum '{}' \\; > ctg-md5.${projid}.txt
+    """ 
+
+}
