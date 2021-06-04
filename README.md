@@ -3,9 +3,9 @@
 
 ## USAGE
 
-1. For reproducibility, create a project / run directory in which you clone this repository, containing the nextflow.config, nf-pipeline, bin
-2. Clone and build the Singularity container for this pipeline: (https://github.com/perllb/ctg-visium-10x/tree/main/container)
-3. Edit the nextflow.config file to fit your project and system. Set current directory as `basedir`. (from where you execute the pipeline).
+1. Clone and build the Singularity container for this pipeline: (https://github.com/perllb/ctg-visium-10x/tree/main/container). 
+2. Edit the nextflow.config file to fit your project and system. Set current directory as `basedir`. (from where you execute the pipeline).
+3. Set up `slide_area.txt` file and prepare slide .gpr file. See below for info.
 4. Edit your samplesheet to match the example samplesheet (same columns, with Sample_Species each sample edited)
 5. Run pipeline 
 ```
@@ -43,9 +43,12 @@ Spaceranger version: spaceranger v1.2.2
 
 ## Samplesheet requirements:
 
-Note: no header! only the rows shown below, starting with the column names.
+The pipeline will use the input samplesheet for demultiplexing, so it should be correct!
+To extract sample ID, reference and project ID for the processes, the pipeline extracts columns after [Data] in any samplesheet. 
+For trimming of adapers, the entire IEM samplesheet can be used as input - but it is sufficient with only a [Data] row followed by the following columns:
 
- | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species 
+ [Data]
+ | Sample_ID | Sample_Name | index | Sample_Project | Sample_ref |
  | --- | --- | --- | --- | --- | 
  | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | human | 
  | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | human | 
@@ -62,6 +65,19 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - Sample_Species (human/mouse/custom - if custom, see below how to edit the config file)
 ```
 
+## Slide Area specification
+Spaceranger needs to know which slide and area each tissue sample is on. 
+For this, the pipeline needs a .csv file (e.g. slide_area.txt) specifying sample ID, sample_name, slide and area, where Lib_ID has to match the Sample_ID in the samplesheet. 
+
+| Lib_ID | Sample_Name | Slide | Area |
+| --- | --- | --- | --- |
+| Visium_09 | Mm926 | V10T06-109 | A1 |
+| Visium_10 | Mm113 | V10T06-109 | B1 |
+| Visium_14 | PO20 | V10T06-110 | B1 |
+| Visium_18 | Mm935 | V10T06-030 | B1 |
+
+## Slide File
+The Slide will be downloaded by spaceranger in runtime. However, if running the pipeline on a server with no connection, the `slide` needs to match a file in the visium slidefile reference. E.g. for V10T06-109 there has to exist a corresponding V10T06-109.gpr file in the slideref dir. 
 
 ## Container
 - `ctg-visium-10x`: For 10x visium-seq. Based on spaceranger v.1.2.2
