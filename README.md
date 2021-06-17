@@ -1,7 +1,9 @@
 # ctg-visium-10x 
 ## Nextflow pipeline for automated spaceranger processing and QC of 10x chromium sc-visium-10x data. 
 
-## USAGE
+## USAGE (manual run with nextflow)
+Alternative is to run with driver (see below).
+
 
 1. Clone and build the Singularity container for this pipeline: (https://github.com/perllb/ctg-visium-10x/tree/main/container). 
 2. Edit the nextflow.config file to fit your project and system. Set current directory as `basedir`. (from where you execute the pipeline).
@@ -11,6 +13,7 @@
 ```
 nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 ```
+
 ## USAGE with driver 
 For automated execution of pipeline.
 
