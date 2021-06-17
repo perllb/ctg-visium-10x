@@ -11,7 +11,45 @@
 ```
 nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 ```
+## USAGE with driver 
+For automated execution of pipeline.
 
+- Must be started from within runfolder root directory.
+- Needs:
+ 1. Runfolder (from where it is started)
+ 2. Samplesheet (with format as specified in ***Samplesheet requirements*** below). If not specified, will take `runfolder/CTG_SampleSheet.csv` from runfolder if it exists.
+ 3. Imagedir. If not specified, will take `runfolder/images` from runfolder if it exists.
+   ***Imagedir must contain**:
+   - tif-images for each sample. File name must be <Sample_ID>.tif, where Sample_ID correspond to samplesheet `Sample_ID` and slide_area.csv `Lib_ID`.
+   - slide_area.csv. See ***Slide Area specification*** below.
+ 4. Slide files in reference directory: Download from 10x webpage (See `Downloading a Slide File for Local Operation` @https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count) and add to slideref. Reference directory is specified in driver. 
+- Will check if all reference .gpr are in the slidefile reference directory. If not, download as specified above. 
+
+```
+Usage: visium-10x [ -m META_ID ] [ -s SAMPLESHEET ] [ -f IMAGE-DIR ] [ -a SLIDE-REF ] [ -i INDEX-TYPE] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ]  [ -d DEMUX-OFF ] [ -n DRY-RUN ] [ -h HELP ] 
+
+Optional arguments: 
+META-ID           -m : Set 'meta-id' for run-analysis (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds visium-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-visium-10x 
+SAMPLESHEET       -s : Set samplesheet used for run (Default: runfolder/CTG_SampleSheet.csv) 
+IMAGE-DIR         -f : Image-dir with TIFS (names as SampleID) and Slide-Area csv (slide_area.csv) (default: <runfolder>/images)
+SLIDE-REF         -a : Specify path to directory containing the .gpr slide files (default: /projects/fs1/shared/references/visium/slidefiles/)
+INDEX-TYPE        -i : Set -a if change to single index. (Default: dual) 
+BCL2FASTQ-ARG     -b : String with bcl2fastq argument for demux. e.g. '--use-bases-mask=Y28n*,I6n*,N10,Y90n*
+CUSTOM-GENOME     -c : Path to custom reference genome if needed. Skip if human/mouse defined in samplesheet 
+RESUME            -r : Set if to resume nf-pipeline
+DEMUX-OFF         -d : Set flag to skip mkfastq (then fastq must be in FQDIR) 
+DRY-RUN           -n : Set -n if you only want to create pipeline directory structure, copy all files to ctg-projects, but not start pipeline. Good if you want to modify config etc manually for this project before starting nextflow.
+HELP              -h : print help message
+```
+
+***Run driver with default settings***
+This requires the current files and directories to be in correct name and location:
+- `CTG_SampleSheet.csv` in runfolder
+- `images` directory in runfolder. Contain .tif images and slide_area.csv file.
+```
+cd runfolder 
+visium-10x-driver
+```
 
 ## Pipeline steps:
 
@@ -67,7 +105,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 ## Slide Area specification
 Spaceranger needs to know which slide and area each tissue sample is on. 
-For this, the pipeline needs a .csv file (e.g. slide_area.txt) specifying sample ID, sample_name, slide and area, where Lib_ID has to match the Sample_ID in the samplesheet. 
+For this, the pipeline needs a .csv file (e.g. slide_area.txt) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
 
 | Lib_ID | Sample_Name | Slide | Area |
 | --- | --- | --- | --- |
