@@ -1,5 +1,5 @@
 # ctg-visium-10x 
-## Nextflow pipeline for preprocessing and QC of 10x chromium sc-visium data with spaceranger. 
+## Nextflow pipeline for automated spaceranger processing and QC of 10x chromium sc-visium-10x data. 
 
 ## USAGE
 
