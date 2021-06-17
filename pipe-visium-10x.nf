@@ -18,7 +18,7 @@ sheet = file(params.sheet)
 
 // create new file for reading into channels that provide sample info!
 newsheet = file("$basedir/sample-sheet.nf.csv")
-slidesheet = file("$imdir/slide_area.txt")
+slidesheet = file("$imdir/slide_area.csv")
 
 // Read and process sample sheet
 all_lines = sheet.readLines()

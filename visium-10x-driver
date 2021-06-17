@@ -1,0 +1,300 @@
+#!/bin/bash
+
+echo "##################### "
+echo "# visium-10x driver # "
+echo "##################### "
+echo 
+echo
+echo "Checking input.. "
+
+
+### This script will 
+### * Run the visium-10x pipeline on data in current runfolder
+### * Modify standard nextflow.config to project specific 
+### * Generate project folder in shared/ctg-delivery/visium-10x
+###  -> Here it will store nextflow.config, nf-pipeline, samplesheet, images, slide area file in ctg-log 
+###  -> Write pipeline output 
+### * nf-Pipeline writes qc to shared/ctg-qc/visium-10x
+
+# Set dirs
+
+# SHARED: where project folder and qc will be written
+shared="/projects/fs1/shared/"
+ctgproj="$shared/ctg-projects/visium-10x/"
+ctgqc="$shared/ctg-qc/visium-10x/"
+
+# NAS: Where pipeline output will be written
+nas="/projets/fs1/nas-sync/"
+ctgdeliver="$nas/ctg-delivery/visium-10x/"
+
+# Visium gpr reference files
+slidedir="/projects/fs1/shared/references/visium/slidefiles/"
+
+# ctg-visium-10x pipeline files
+ctg_pipe="/projects/fs1/shared/ctg-pipelines/ctg-visium-10x/"
+ctg_nf="$ctg_pipe/pipe-visium-10x.nf"
+ctg_config="$ctg_pipe/nextflow.config"
+
+# Initialize variables
+runfolder=$(pwd)
+run=$(basename $runfolder)
+demux="y"
+resume='n'
+index='dual'
+nostart='n'
+
+# usage message 
+usage() {
+
+    echo ""
+    echo "Usage: visium-10x [ -m META_ID ] [ -s SAMPLESHEET ] [ -f IMAGE-DIR ] [ -a SLIDE-REF ] [ -i INDEX-TYPE] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ]  [ -d DEMUX-OFF ] [ -n DRY-RUN ] [ -h HELP ] "
+    echo 
+    echo "Optional arguments: "
+    echo "META-ID           -m : Set 'meta-id' for run-analysis (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds visium-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-visium-10x "
+    echo "SAMPLESHEET       -s : Set samplesheet used for run (Default: runfolder/CTG_SampleSheet.csv) "
+    echo "IMAGE-DIR         -f : Image-dir with TIFS (names as SampleID) and Slide-Area csv (slide_area.csv) (default: <runfolder>/images) "
+    echo "SLIDE-REF         -a : Specify path to directory containing the .gpr slide files (default: /projects/fs1/shared/references/visium/slidefiles/) "
+    echo "INDEX-TYPE        -i : Set -a if change to single index. (Default: dual) "
+    echo "BCL2FASTQ-ARG     -b : String with bcl2fastq argument for demux. e.g. '--use-bases-mask=Y28n*,I6n*,N10,Y90n* "
+    echo "CUSTOM-GENOME     -c : Path to custom reference genome if needed. Skip if human/mouse defined in samplesheet "
+    echo "RESUME            -r : Set if to resume nf-pipeline "
+    echo "DEMUX-OFF         -d : Set flag to skip mkfastq (then fastq must be in FQDIR) "
+    echo "DRY-RUN           -n : Set -n if you only want to create pipeline directory structure, copy all files to ctg-projects, but not start pipeline. Good if you want to modify config etc manually for this project before starting nextflow. "
+    echo "HELP              -h : print help message "
+    echo
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments 
+while getopts m:s:ib:f:rc:dnh opt; do
+    case $opt in
+	m) id=$OPTARG
+	    ;;
+	s) sheet=$OPTARG
+	    ;;
+	i) index="single"
+	    ;;
+	b) b2farg=$OPTARG
+	    ;;
+	f) imagedir=$OPTARG
+	    ;;
+	r) resume="y"
+	    ;;
+	c) custom_genome=$OPTARG
+	    ;;
+	d) demux="n"
+	    ;;
+	n) nostart="y"
+	    ;;
+	h) exit_abnormal
+	    ;;
+	\?) echo "> Error: Invalid option -$OPTARG" >&2
+	    exit_abnormal ;;
+	:) echo "> Error: -${OPTARG} requires an argument! "
+	    exit_abnormal ;;
+    esac
+done
+
+## Check arguments
+shift "$(( OPTIND -1 ))"
+
+# Check meta-id
+if [ -z $id ]; then
+    echo ""; echo "> No meta-ID specified"
+    metaid=$(echo $run | cut -f1,3 -d"_")
+    id="${metaid}-visium-10x"
+    echo "- Using: '${id}'"
+fi
+
+# Check if slide file exist for slide id
+if [ -z $imagedir ]; then 
+    echo; echo "> No -f imagedir specified"; exit_abnormal;
+else
+    ## CHECK slide area file and if gpr files exists! 
+    if [ -f $imagedir/slide_area.csv ]; then
+	echo "> Checking slide_area.csv ($imagedir/slide_area.csv) .. "
+	idx=0
+	for i in $(cat $imagedir/slide_area.csv);
+	    do gpr=$(echo $i | cut -f3 -d",")
+	    if [ $idx == 1 ]; then
+		if [ ! -f $slidedir/$gpr.gpr ]; then
+	            echo "> $gpr: Slide ($gpr) gpr is not in reference: $slidedir"
+		    echo "> Currently available gpr files: "
+		    ls -l  $slidedir
+		    echo "> To add new gpr, download from 10x webpage"
+		    exit_abnormal ;
+		else
+		    echo "> $gpr: Slide .gpr file is in reference: $slidedir/$gpr.gpr."
+		fi
+	    fi
+	    idx=1
+	done
+    else
+	echo "> $imagedir/slide_area.csv does NOT exist! please add!"
+    fi
+fi
+
+sleep 2s
+
+# Check if meta-ID already exist
+if [ "$resume" == 'n' ] && [ -d /projects/fs1/shared/ctg-projects/visium-10x/$id ]; then
+    # Prompt user to approve overwriting current visium-10x project-folder
+    read -p "> WARNING: $id has been used before:
+
+The following directories already exist:
+- $ctgproj/$id
+- $ctgqc/$id
+- $ctgdeliver/$id 
+
+ Do you want to overwrite these folders? 
+
+(y/n)  ... : " prompt
+    if [[ $prompt != "y" ]]
+    then 
+	echo "> Exiting: Please provide new [ -i metaID ] !"
+	exit_abnormal
+    else
+	echo "> Deleting content of the folders.. "
+	rm -r $ctgproj/$id
+	rm -r $ctgqc/$id
+	rm -r $ctgdeliver/$id 
+    fi
+fi
+
+# Check samplesheet name
+if [ -z $sheet ]; then
+    echo ""; echo "> No samplesheet specified"
+    sheet="CTG_SampleSheet.csv"
+    echo "- Using 'CTG_SampleSheet.csv'"
+    if [ ! -f $sheet ]; then
+	echo "> Error: CTG_SampleSheet.csv does not exist (in current dir)"
+	echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+	exit_abnormal
+    fi
+fi
+
+sleep 2s
+
+##############
+# Print info #
+##############
+echo ""
+echo "> The following arguments are entered:"
+echo "ID               : $id"
+echo "Runfolder        : $runfolder " 
+echo "Sheet            : $sheet"
+echo "Index-type       : ${index}-index"
+echo "Bcl2fq           : '$b2farg'"
+echo "Image-dir        : $imagedir "
+echo "Slide reference  : $slidedir "
+if [ -z $custom_genome ]; then
+    echo "Custom Genome    : NONE "
+else
+    echo "Custom Genome    : $custom_genome "
+fi
+if [ $demux == "y" ]; then
+    echo "Demux            : YES "
+else
+    echo "Demux            : NO "
+fi
+if [ $resume == "y" ]; then
+    echo "Resume           : YES "
+else
+    echo "Resume           : NO "
+fi
+
+echo ""
+echo "Runfolder          : $runfolder "
+echo "Project Logfolder  : $ctgproj/$id"
+echo "QC Logfolder       : $ctgqc/$id"
+echo "Output             : $ctgdeliver/$id"
+echo ""
+
+# Prompt user to approve running in current directory and input
+read -p "> WARNING: Can only be run from within runfolder! 
+
+- Are you in runfolder in which you want run? 
+- And is input described above correct ?  
+
+(y/n)  ... : " prompt
+if [[ $prompt != "y" ]]
+then 
+    echo "> Exiting: Go to runfolder!"
+    exit 0
+fi
+
+################
+# Set up files #
+################
+
+# Creating project dir for logging pipeline
+projdir="$ctgproj/$id/"
+mkdir -p $projdir
+
+# Copy nextflow script and config to project folder
+nf_pipe="$ctg_nf"
+nf_config="$ctg_config"
+
+cp $nf_pipe $projdir
+cp $nf_config $projdir
+# Copy imagedir to project folder
+echo "> Copying imagedir $imagedir to project dir"
+cp -r $imagedir $projdir
+baseimagedir=$(basename $imagedir)
+cpimagedir=$projdir/$baseimagedir
+
+# Edit config file
+proj_conf=$projdir/nextflow.config
+sed "s/xmetaidx/$id/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s|xrunfolderx|$runfolder|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s/xsamplesheetx/$sheet/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s/xbclargx/$b2farg/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s/xindexx/$index/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s|ximagedirx|$cpimagedir|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s|xbasedirx|$projdir|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s|xsliderefx|$slidedir|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+if [ ! -z $custom_genome ]; then
+    sed "s|xcustomgenomex|$custom_genome|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+fi
+if [ $demux == "y" ];then
+    sed "s/xdemuxx/y/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+else
+    sed "s/xdemuxx/n/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+fi
+
+# Copy edited config to runfolder
+cp $proj_conf $runfolder/$id.nextflow.config
+# Copy samplesheet to project folder (ctg-projects..)
+cp $sheet $projdir
+
+
+#####################
+# Start nf-pipeline #
+#####################
+
+# Go to ctg-project folder to execute pipeline
+cd $projdir
+
+if [ $nostart == "n" ]; then
+    if [ $resume == "y" ]; then
+	nohup nextflow run $nf_pipe -resume > log.nf.visium-10x.$id &
+    else
+	nohup nextflow run $nf_pipe > log.nf.visium-10x.$id &
+    fi
+    echo ; echo 
+    echo "######################################"
+    echo "# visium-10x pipeline submitted #"
+    echo "######################################"
+    echo ; echo 
+else
+    echo "Pipeline not started (flag -n). Pipeline files ready in $projdir."
+fi
+
+
+
+
+
