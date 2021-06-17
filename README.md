@@ -120,12 +120,13 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ## Image-dir specifications
  
 ***Imagedir must contain***:
-      - tif-images for each sample. File name must be <Sample_ID>.tif, where Sample_ID correspond to samplesheet `Sample_ID` and slide_area.csv `Lib_ID`.
-      - slide_area.csv. See ***Slide Area specification*** below.
+- tif-images for each sample. File name must be <Sample_ID>.tif, where Sample_ID correspond to samplesheet `Sample_ID` and slide_area.csv `Lib_ID`.
+- slide_area.csv. See ***Slide Area specification*** below.
  
 ## Slide Area specification
 Spaceranger needs to know which slide and area each tissue sample is on. 
-For this, the pipeline needs a .csv file (<imagedir>/slide_area.csv) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
+
+For this, the pipeline needs a .csv file (imagedir/slide_area.csv) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
 
 | Lib_ID | Sample_Name | Slide | Area |
 | --- | --- | --- | --- |
