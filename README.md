@@ -32,12 +32,11 @@ The following files have to be added to the runfolder for pipeline success
 - For trimming of adapers, the entire IEM samplesheet can be used as input - but it is sufficient with only a [Data] row followed by the following columns:
 - Add a [Header] field with ProjectID,[project-id],
 
-[Header]
-ProjectID,2021_021,
-
-[Data]
-| Sample_ID | index | Sample_Project | Sample_ref |
-| --- | --- | --- | --- | 
+| [Header] | --- | --- | --- | 
+| --- | --- | --- | --- |
+| ProjectID | 2021_021 | --- | --- | 
+| [Data] | --- | --- | --- | 
+| **Sample_ID** | **index** | **Sample_Project** | **Sample_ref** |
 | Si1 | SI-GA-D9 | 2021_012 | human | 
 | Si2 | SI-GA-H9 | 2021_012 | human | 
 | Sample1 | SI-GA-C9 | 2021_013 | mouse |
