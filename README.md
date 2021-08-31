@@ -41,6 +41,93 @@ DRY-RUN           -n : Set -n if you only want to create pipeline directory stru
 HELP              -h : print help message
 ```
 
+## Input files
+
+The following files have to be added to the runfolder for pipeline success
+
+1. Samplesheet: `CTG_SampleSheet.visium-10x.csv`
+2. `slide_area.txt`
+3. `images` directory with tif images:
+4. tif images in `images` directory, with name corresponding to Sample_ID in samplesheet: images/`<sample_id>.tif`
+5. If running offline - .gpr files
+
+### 1. Samplesheet requirements:
+
+- The pipeline will use the input samplesheet for demultiplexing, so it must be correct!
+- To extract sample ID, reference and project ID for the processes, the pipeline extracts columns after [Data] in any samplesheet. 
+- For trimming of adapers, the entire IEM samplesheet can be used as input - but it is sufficient with only a [Data] row followed by the following columns:
+
+ [Data]
+ | Sample_ID | index | Sample_Project | Sample_ref |
+ | --- | --- | --- | --- | 
+ | Si1 | SI-GA-D9 | 2021_012 | human | 
+ | Si2 | SI-GA-H9 | 2021_012 | human | 
+ | Sample1 | SI-GA-C9 | 2021_013 | mouse |
+ | Sample2 | SI-GA-C9 | 2021_013 | mouse |
+
+The nf-pipeline takes the following Columns from samplesheet to use in channels:
+
+- Sample_ID ('Sample_Name' will be ignored)
+- Index (Must use index ID, not sequence!)
+- Sample_Project (Project ID)
+- Sample_Species (human/mouse/custom - if custom, see below how to edit the config file)
+
+#### Samplesheet template
+```
+[Data],,,
+Sample_ID,index,Sample_Project,Sample_ref
+Visium_25,SI-TT-A4,2021_099,human
+Visium_26,SI-TT-B4,2021_099,human
+Visium_27,SI-TT-C4,2021_099,human
+Visium_28,SI-TT-D4,2021_099,human
+Visium_29,SI-TT-E4,2021_099,human
+Visium_30,SI-TT-F4,2021_099,human
+Visium_40,SI-TT-H5,2021_099,human 
+```
+
+### 2. slide_area.txt specifications
+
+#### Slide Area specification
+Spaceranger needs to know which slide and area each tissue sample is on. 
+
+For this, the pipeline needs a .csv file (imagedir/slide_area.csv) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
+
+| Lib_ID | Sample_Name | Slide | Area |
+| --- | --- | --- | --- |
+| Visium_09 | Mm926 | V10T06-109 | A1 |
+| Visium_10 | Mm113 | V10T06-109 | B1 |
+| Visium_14 | PO20 | V10T06-110 | B1 |
+| Visium_18 | Mm935 | V10T06-030 | B1 |
+
+#### Slide Area template
+```
+Lib_ID,Sample_Name,Slide,Area
+Visium_25,,PO7PO9,V10S21-048,A1
+Visium_26,,PO9PO7,V10S21-048,B1
+Visium_27,,PO7_2,V10S21-048,C1
+Visium_28,,PO13,V10S21-048,D1
+Visium_29,,Mm1319,V10S21-049,A1
+Visium_30,,Mm1369,V10S21-049,B1
+```
+
+### 3 + 4. Image dir with slide .tif images 
+
+Must be in runfolder, under `images` directory
+- tif-image for each sample. 
+- File name must be <Sample_ID>.tif, where Sample_ID correspond to `Sample_ID` in samplesheet AND `Lib_ID` slide_area.csv.
+
+### 5. .GPR files
+
+- The `Slide` column values in slide_area.csv (specified above) needs a .gpr file in the visium slidefile reference. E.g. for V10T06-109 there has to exist a corresponding V10T06-109.gpr file in the slideref dir (<slidedir>/V10T06-109.gpr). 
+
+Download from 10x webpage (See `Downloading a Slide File for Local Operation` @https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count) and add to slide-ref directory. 
+ 
+Slide-ref directory is specified in driver (which will be automatically defined in nextflow.config (default: /projects/fs1/shared/references/visium/slidefiles/). 
+ 
+(The Slide .gpr will normally be downloaded by spaceranger in runtime if run in environment with network connection - but this pipeline is designed to run offline.)
+ 
+ 
+## How to run
 ***Run driver with default settings***
 This requires the current files and directories to be in correct name and location:
 - `CTG_SampleSheet.csv` in runfolder
@@ -99,53 +186,6 @@ Spaceranger version: spaceranger v1.2.2
     * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
 
 
-## Samplesheet requirements:
-
-The pipeline will use the input samplesheet for demultiplexing, so it should be correct!
-To extract sample ID, reference and project ID for the processes, the pipeline extracts columns after [Data] in any samplesheet. 
-For trimming of adapers, the entire IEM samplesheet can be used as input - but it is sufficient with only a [Data] row followed by the following columns:
-
- [Data]
- | Sample_ID | Sample_Name | index | Sample_Project | Sample_ref |
- | --- | --- | --- | --- | --- | 
- | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | human | 
- | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | human | 
- | Sample1 | S1 | SI-GA-C9 | proj_2021_013 | mouse |
- | Sample2 | S23 | SI-GA-C9 | proj_2021_013 | mouse |
-
-The nf-pipeline takes the following Columns from samplesheet to use in channels:
-
-- Sample_ID ('Sample_Name' will be ignored)
-- Index (Must use index ID!)
-- Sample_Project (Project ID)
-- Sample_Species (human/mouse/custom - if custom, see below how to edit the config file)
-
-## Image-dir specifications
- 
-***Imagedir must contain***:
-- tif-images for each sample. File name must be <Sample_ID>.tif, where Sample_ID correspond to samplesheet `Sample_ID` and slide_area.csv `Lib_ID`.
-- slide_area.csv. See ***Slide Area specification*** below.
- 
-## Slide Area specification
-Spaceranger needs to know which slide and area each tissue sample is on. 
-
-For this, the pipeline needs a .csv file (imagedir/slide_area.csv) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
-
-| Lib_ID | Sample_Name | Slide | Area |
-| --- | --- | --- | --- |
-| Visium_09 | Mm926 | V10T06-109 | A1 |
-| Visium_10 | Mm113 | V10T06-109 | B1 |
-| Visium_14 | PO20 | V10T06-110 | B1 |
-| Visium_18 | Mm935 | V10T06-030 | B1 |
-
-## Slide File Specifications
-The `Slide` column values in slide_area.csv (specified above) needs a .gpr file in the visium slidefile reference. E.g. for V10T06-109 there has to exist a corresponding V10T06-109.gpr file in the slideref dir (<slidedir>/V10T06-109.gpr). 
-
-Download from 10x webpage (See `Downloading a Slide File for Local Operation` @https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count) and add to slide-ref directory. 
- 
-Slide-ref directory is specified in driver (which will be automatically defined in nextflow.config (default: /projects/fs1/shared/references/visium/slidefiles/). 
- 
-(The Slide .gpr will normally be downloaded by spaceranger in runtime if run in environment with network connection - but this pipeline is designed to run offline.)
 
 ## Container
 - `ctg-visium-10x`: For 10x visium-seq. Based on spaceranger v.1.2.2
