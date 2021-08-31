@@ -15,8 +15,6 @@ nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 ```
 
 
-```
-
 ## Input files
 
 The following files have to be added to the runfolder for pipeline success
