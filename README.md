@@ -19,11 +19,11 @@ nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 
 The following files have to be added to the runfolder for pipeline success
 
-1. Samplesheet: `CTG_SampleSheet.visium-10x.csv`
-2. `slide_area.txt`
-3. `images` directory with tif images:
+1. Samplesheet: `CTG_SampleSheet.visium-10x.csv` (In runfolder)
+2. `slide_area.csv` (In runfolder)
+3. `images` directory with tif images: (In runfolder)
 4. tif images in `images` directory, with name corresponding to Sample_ID in samplesheet: images/`<sample_id>.tif`
-5. slidefiles .gpr (If running offline.)
+5. slidefiles .gpr (If running offline.) (See below for file location)
 
 ### 1. Samplesheet requirements:
 
@@ -64,7 +64,7 @@ Visium_40,SI-TT-H5,2021_099,human
 #### Slide Area specification
 Spaceranger needs to know which slide and area each tissue sample is on. 
 
-For this, the pipeline needs a .csv file (imagedir/slide_area.csv) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
+For this, the pipeline needs a .csv file (`slide_area.csv`) specifying sample ID, sample_name, slide and area, where `Lib_ID` has to match the `Sample_ID` in the samplesheet. 
 
 | Lib_ID | Sample_Name | Slide | Area |
 | --- | --- | --- | --- |
@@ -92,16 +92,16 @@ Must be in runfolder, under `images` directory
 
 ### 5. .GPR files
 
-- The `Slide` column values in slide_area.csv (specified above) needs a .gpr file in the visium slidefile reference. E.g. for V10T06-109 there has to exist a corresponding V10T06-109.gpr file in the slideref dir (<slidedir>/V10T06-109.gpr). 
-
+- The `Slide` column values in slide_area.csv (specified above) needs a .gpr file in the visium slidefile reference. E.g. for V10T06-109 there has to exist a
+corresponding V10T06-109.gpr file in the slideref dir (<slidedir>/V10T06-109.gpr)
+ 
 Download from 10x webpage (See `Downloading a Slide File for Local Operation` @https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count) and add to slide-ref directory. 
- 
+
 Slide-ref directory is specified in driver (which will be automatically defined in nextflow.config (default: /projects/fs1/shared/references/visium/slidefiles/). 
- 
+
 (The Slide .gpr will normally be downloaded by spaceranger in runtime if run in environment with network connection - but this pipeline is designed to run offline.)
  
- 
-## USAGE with driver 
+##  USAGE with driver 
 For automated execution of pipeline.
 
 - Must be started from within runfolder root directory.
