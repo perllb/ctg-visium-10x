@@ -14,31 +14,7 @@ Alternative is to run with driver (see below).
 nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 ```
 
-## USAGE with driver 
-For automated execution of pipeline.
 
-- Must be started from within runfolder root directory.
-- Needs:
- 1. Runfolder (from where it is started)
- 2. Samplesheet (with format as specified in ***Samplesheet requirements*** below). If not specified, will take `runfolder/CTG_SampleSheet.csv` from runfolder if it exists.
- 3. Imagedir. If not specified, will take `runfolder/images` from runfolder if it exists. See `Image dir specifications` below.
- 4. Slide files in reference directory. See `Slide file specifications` below. 
-
-```
-Usage: visium-10x [ -m META_ID ] [ -s SAMPLESHEET ] [ -f IMAGE-DIR ] [ -a SLIDE-REF ] [ -i INDEX-TYPE] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ]  [ -d DEMUX-OFF ] [ -n DRY-RUN ] [ -h HELP ] 
-
-Optional arguments: 
-META-ID           -m : Set 'meta-id' for run-analysis (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds visium-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-visium-10x 
-SAMPLESHEET       -s : Set samplesheet used for run (Default: runfolder/CTG_SampleSheet.csv) 
-IMAGE-DIR         -f : Image-dir with TIFS (names as SampleID) and Slide-Area csv (slide_area.csv) (default: <runfolder>/images)
-SLIDE-REF         -a : Specify path to directory containing the .gpr slide files (default: /projects/fs1/shared/references/visium/slidefiles/)
-INDEX-TYPE        -i : Set -a if change to single index. (Default: dual) 
-BCL2FASTQ-ARG     -b : String with bcl2fastq argument for demux. e.g. '--use-bases-mask=Y28n*,I6n*,N10,Y90n*
-CUSTOM-GENOME     -c : Path to custom reference genome if needed. Skip if human/mouse defined in samplesheet 
-RESUME            -r : Set if to resume nf-pipeline
-DEMUX-OFF         -d : Set flag to skip mkfastq (then fastq must be in FQDIR) 
-DRY-RUN           -n : Set -n if you only want to create pipeline directory structure, copy all files to ctg-projects, but not start pipeline. Good if you want to modify config etc manually for this project before starting nextflow.
-HELP              -h : print help message
 ```
 
 ## Input files
@@ -127,7 +103,33 @@ Slide-ref directory is specified in driver (which will be automatically defined 
 (The Slide .gpr will normally be downloaded by spaceranger in runtime if run in environment with network connection - but this pipeline is designed to run offline.)
  
  
-## How to run
+## USAGE with driver 
+For automated execution of pipeline.
+
+- Must be started from within runfolder root directory.
+- Needs:
+ 1. Runfolder (from where it is started)
+ 2. Samplesheet (with format as specified in ***Samplesheet requirements*** below). If not specified, will take `runfolder/CTG_SampleSheet.csv` from runfolder if it exists.
+ 3. Imagedir. If not specified, will take `runfolder/images` from runfolder if it exists. See `Image dir specifications` below.
+ 4. Slide files in reference directory. See `Slide file specifications` below. 
+
+```
+Usage: visium-10x [ -m META_ID ] [ -s SAMPLESHEET ] [ -f IMAGE-DIR ] [ -a SLIDE-REF ] [ -i INDEX-TYPE] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ]  [ -d DEMUX-OFF ] [ -n DRY-RUN ] [ -h HELP ] 
+
+Optional arguments: 
+META-ID           -m : Set 'meta-id' for run-analysis (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds visium-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-visium-10x 
+SAMPLESHEET       -s : Set samplesheet used for run (Default: runfolder/CTG_SampleSheet.csv) 
+IMAGE-DIR         -f : Image-dir with TIFS (names as SampleID) and Slide-Area csv (slide_area.csv) (default: <runfolder>/images)
+SLIDE-REF         -a : Specify path to directory containing the .gpr slide files (default: /projects/fs1/shared/references/visium/slidefiles/)
+INDEX-TYPE        -i : Set -a if change to single index. (Default: dual) 
+BCL2FASTQ-ARG     -b : String with bcl2fastq argument for demux. e.g. '--use-bases-mask=Y28n*,I6n*,N10,Y90n*
+CUSTOM-GENOME     -c : Path to custom reference genome if needed. Skip if human/mouse defined in samplesheet 
+RESUME            -r : Set if to resume nf-pipeline
+DEMUX-OFF         -d : Set flag to skip mkfastq (then fastq must be in FQDIR) 
+DRY-RUN           -n : Set -n if you only want to create pipeline directory structure, copy all files to ctg-projects, but not start pipeline. Good if you want to modify config etc manually for this project before starting nextflow.
+HELP              -h : print help message
+ 
+ 
 ***Run driver with default settings***
 This requires the current files and directories to be in correct name and location:
 - `CTG_SampleSheet.csv` in runfolder
