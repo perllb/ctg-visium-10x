@@ -34,6 +34,7 @@ slidedir="/projects/fs1/shared/references/visium/slidefiles/"
 ctg_pipe="/projects/fs1/shared/ctg-pipelines/ctg-visium-10x/"
 ctg_nf="$ctg_pipe/pipe-visium-10x.nf"
 ctg_config="$ctg_pipe/nextflow.config"
+ctg_bin="$ctg_pipe/bin"
 
 # Initialize variables
 runfolder=$(pwd)
@@ -247,6 +248,8 @@ nf_config="$ctg_config"
 
 cp $nf_pipe $projdir
 cp $nf_config $projdir
+cp -r $ctg_bin $projdir/
+
 # Copy imagedir to project folder
 echo "> Copying imagedir $imagedir to project dir"
 cp -r $imagedir $projdir

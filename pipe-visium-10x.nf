@@ -18,23 +18,23 @@ sheet = file(params.sheet)
 
 // create new file for reading into channels that provide sample info!
 newsheet = file("$basedir/sample-sheet.nf.csv")
+demuxsheet = file("$basedir/sample-sheet.nf.demux.csv")
 slidesheet = file("$imdir/slide_area.csv")
 
-// Read and process sample sheet
+// Read and process sample sheet                                                                                                                                                  
 all_lines = sheet.readLines()
 write_b = false // if next lines has sample info
-newsheet.text=""     
+newsheet.text=""
 
-for ( line in all_lines ) {
-
+for ( line in all_lines ) { 
     if ( write_b ) {
-	newsheet.append(line + "\n")
+        newsheet.append(line + "\n")
+	}
+    if (line.contains("[Data]")){
+        write_b = true
     }
-    if (line.contains("[Data]")) {
-	write_b = true
-    }
-}
-
+}   
+  
 println "============================="
 println ">>> visium-10x pipeline >>>"
 println ""
@@ -78,11 +78,28 @@ infoall.subscribe{ println "Info: $it" }
 println " > Slide area per sample: "
 infoSlide.subscribe{ println "Info Slides: $it" }
 
+// Parse samplesheet
+process parsesheet {
+
+	tag "$metaid"
+
+	input:
+	val newsheet
+
+	output:
+	val demuxsheet into demux_sheet
+
+	"""
+python $basedir/bin/ctg-parse-samplesheet.10x.py -s $newsheet -o $demuxsheet -i dual
+	"""
+}
+
+
 // Run mkFastq
 process mkfastq {
 
 	input:
-        val sheet 
+        val sheet from demux_sheet
 
 	output:
         val "x" into srcount_x
