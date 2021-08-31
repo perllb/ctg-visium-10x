@@ -102,43 +102,58 @@ done
 ## Check arguments
 shift "$(( OPTIND -1 ))"
 
-# Check meta-id
-if [ -z $id ]; then
-    echo ""; echo "> No meta-ID specified"
-    metaid=$(echo $run | cut -f1,3 -d"_")
-    id="${metaid}-visium-10x"
-    echo "- Using: '${id}'"
-fi
-
-# Check if slide file exist for slide id
-if [ -z $imagedir ]; then 
-    echo; echo "> No -f imagedir specified"; exit_abnormal;
-else
-    ## CHECK slide area file and if gpr files exists! 
-    if [ -f $imagedir/slide_area.csv ]; then
-	echo "> Checking slide_area.csv ($imagedir/slide_area.csv) .. "
-	idx=0
-	for i in $(cat $imagedir/slide_area.csv);
-	    do gpr=$(echo $i | cut -f3 -d",")
-	    if [ $idx == 1 ]; then
-		if [ ! -f $slidedir/$gpr.gpr ]; then
-	            echo "> $gpr: Slide ($gpr) gpr is not in reference: $slidedir"
-		    echo "> Currently available gpr files: "
-		    ls -l  $slidedir
-		    echo "> To add new gpr, download from 10x webpage"
-		    exit_abnormal ;
-		else
-		    echo "> $gpr: Slide .gpr file is in reference: $slidedir/$gpr.gpr."
-		fi
-	    fi
-	    idx=1
-	done
-    else
-	echo "> $imagedir/slide_area.csv does NOT exist! please add!"
+# Check samplesheet name
+if [ -z $sheet ]; then
+    echo ""; echo "> No samplesheet specified"
+    sheet="CTG_SampleSheet.visium-10x.csv"
+    echo "- Using '$sheet' in runfolder ($run)"
+    if [ ! -f $sheet ]; then
+	echo "> Error: $sheet does not exist (in current dir)"
+	echo "- Please specify correct samplesheet, or create a $sheet in current runfolder"
+	exit_abnormal
     fi
 fi
 
-sleep 2s
+# Check meta-id - assign project number if not specified
+if [ -z $id ]; then
+    echo "> No meta-ID specified"
+    metaid=$(grep "ProjectID" $sheet | cut -f2 -d",")
+    id="${metaid}"
+    echo "- Using: '${id}'"
+fi
+
+# Check if image dir exists
+if [ -z $imagedir ]; then 
+    echo "> No -f imagedir specified - using: $runfolder/images"
+    imagedir=$runfolder/images
+fi
+if [ ! -d $runfolder/$images ]; then
+    echo "> No $imagedir exists.. exiting"; exit_abnormal
+fi
+
+
+## CHECK slide area file and if gpr files exists! 
+if [ -f $imagedir/slide_area.csv ]; then
+    echo "> Checking slide_area.csv ($imagedir/slide_area.csv) .. "
+    idx=0
+    for i in $(cat $imagedir/slide_area.csv);
+    do gpr=$(echo $i | cut -f3 -d",")
+	if [ $idx == 1 ]; then
+	    if [ ! -f $slidedir/$gpr.gpr ]; then
+	        echo "> $gpr: Slide ($gpr) gpr is not in reference: $slidedir"
+		echo "> Currently available gpr files: "
+		ls -l  $slidedir
+		echo "> To add new gpr, download from 10x webpage"
+		exit_abnormal ;
+	    else
+		echo "> $gpr: Slide .gpr file is in reference: $slidedir/$gpr.gpr."
+	    fi
+	fi
+	idx=1
+    done
+else
+    echo "> $imagedir/slide_area.csv does NOT exist! please add!"; exit_abnormal
+fi
 
 # Check if meta-ID already exist
 if [ "$resume" == 'n' ] && [ -d /projects/fs1/shared/ctg-projects/visium-10x/$id ]; then
@@ -165,17 +180,7 @@ The following directories already exist:
     fi
 fi
 
-# Check samplesheet name
-if [ -z $sheet ]; then
-    echo ""; echo "> No samplesheet specified"
-    sheet="CTG_SampleSheet.csv"
-    echo "- Using 'CTG_SampleSheet.csv'"
-    if [ ! -f $sheet ]; then
-	echo "> Error: CTG_SampleSheet.csv does not exist (in current dir)"
-	echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
-	exit_abnormal
-    fi
-fi
+
 
 sleep 2s
 
@@ -190,6 +195,7 @@ echo "Sheet            : $sheet"
 echo "Index-type       : ${index}-index"
 echo "Bcl2fq           : '$b2farg'"
 echo "Image-dir        : $imagedir "
+echo "Slide-file       : $imagedir/slide_area.csv "
 echo "Slide reference  : $slidedir "
 if [ -z $custom_genome ]; then
     echo "Custom Genome    : NONE "
