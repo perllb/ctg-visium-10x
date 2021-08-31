@@ -76,12 +76,14 @@ For this, the pipeline needs a .csv file (`slide_area.csv`) specifying sample ID
 #### Slide Area template
 ```
 Lib_ID,Sample_Name,Slide,Area
-Visium_25,,PO7PO9,V10S21-048,A1
-Visium_26,,PO9PO7,V10S21-048,B1
-Visium_27,,PO7_2,V10S21-048,C1
-Visium_28,,PO13,V10S21-048,D1
-Visium_29,,Mm1319,V10S21-049,A1
-Visium_30,,Mm1369,V10S21-049,B1
+Visium_25,PO7PO9,V10S21-048,A1
+Visium_26,PO9PO7,V10S21-048,B1
+Visium_27,PO7_2,V10S21-048,C1
+Visium_28,PO13,V10S21-048,D1
+Visium_29,Mm1319,V10S21-049,A1
+Visium_30,Mm1369,V10S21-049,B1
+Visium_31,Mm743,V10S21-049,C1
+Visium_32,Mm807,V10S21-049,D1
 ```
 
 ### 3 + 4. Image dir with slide .tif images 
