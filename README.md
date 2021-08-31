@@ -23,7 +23,7 @@ The following files have to be added to the runfolder for pipeline success
 2. `slide_area.txt`
 3. `images` directory with tif images:
 4. tif images in `images` directory, with name corresponding to Sample_ID in samplesheet: images/`<sample_id>.tif`
-5. .gpr files (If running offline.)
+5. slidefiles .gpr (If running offline.)
 
 ### 1. Samplesheet requirements:
 
