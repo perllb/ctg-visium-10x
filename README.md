@@ -30,14 +30,18 @@ The following files have to be added to the runfolder for pipeline success
 - The pipeline will use the input samplesheet for demultiplexing, so it must be correct!
 - To extract sample ID, reference and project ID for the processes, the pipeline extracts columns after [Data] in any samplesheet. 
 - For trimming of adapers, the entire IEM samplesheet can be used as input - but it is sufficient with only a [Data] row followed by the following columns:
+- Add a [Header] field with ProjectID,[project-id],
 
- [Data]
- | Sample_ID | index | Sample_Project | Sample_ref |
- | --- | --- | --- | --- | 
- | Si1 | SI-GA-D9 | 2021_012 | human | 
- | Si2 | SI-GA-H9 | 2021_012 | human | 
- | Sample1 | SI-GA-C9 | 2021_013 | mouse |
- | Sample2 | SI-GA-C9 | 2021_013 | mouse |
+[Header]
+ProjectID,2021_021,
+
+[Data]
+| Sample_ID | index | Sample_Project | Sample_ref |
+| --- | --- | --- | --- | 
+| Si1 | SI-GA-D9 | 2021_012 | human | 
+| Si2 | SI-GA-H9 | 2021_012 | human | 
+| Sample1 | SI-GA-C9 | 2021_013 | mouse |
+| Sample2 | SI-GA-C9 | 2021_013 | mouse |
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
@@ -48,6 +52,9 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 #### Samplesheet template
 ```
+[Header]
+ProjectID,2021_021,
+
 [Data],,,
 Sample_ID,index,Sample_Project,Sample_ref
 Visium_25,SI-TT-A4,2021_099,human
