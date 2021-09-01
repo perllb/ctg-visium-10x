@@ -15,6 +15,33 @@ nohup nextflow run pipe-visium-10x.nf > log.pipe-visium-10x.txt &
 ```
 
 
+## Pipeline steps:
+
+Spaceranger version: spaceranger v1.2.2
+
+* `Demultiplexing` (spaceranger mkfastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/mkfastq), and tag barcodes.
+* `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).
+* `Align` + `Counts` (spaceranger count): Aligns fastq files to reference genome, generate spatial feature counts, perform secondary analysis such as clustering and generates the cloupe files (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count). Using 
+* `Aggregation` (spaceranger aggr): **Not yet supported.** Automatically creates the input csv pointing to molecule_info.h5 files for each sample to be aggregated and executes aggregation (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/aggregate). 
+* `multiQC`: Compile fastQC and spaceranger count metrics in multiqc report
+* `md5sum`: md5sum of all generated files
+
+
+## Output:
+* ctg-PROJ_ID-output
+    * `qc`: Quality control output. 
+        * cellranger metrics: Main metrics summarising the count / cell output 
+        * fastqc output (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+        * multiqc output: Summarizing FastQC output and demultiplexing (https://multiqc.info/)
+    * `fastq`: Contains raw fastq files from cellranger mkfastq.
+    * `count`: Cellranger count output. Here you find gene/cell count matrices, secondary analysis output, and more. Please go to https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count for more information on the output files.
+    * `summaries`: 
+        * web-summary files which provide an overview of essential metrics from the 10x run. 
+        * cloupe files which can be used to explore the data interactively in the Loupe browser (https://support.10xgenomics.com/spatial-gene-expression/software/visualization/latest/what-is-loupe-browser)  
+    * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
+
+
+
 ## Input files
 
 The following files have to be added to the runfolder for pipeline success
@@ -109,6 +136,7 @@ Slide-ref directory is specified in driver (which will be automatically defined 
 
 (The Slide .gpr will normally be downloaded by spaceranger in runtime if run in environment with network connection - but this pipeline is designed to run offline.)
  
+
 ##  USAGE with driver 
 For automated execution of pipeline.
 
@@ -135,7 +163,8 @@ DEMUX-OFF         -d : Set flag to skip mkfastq (then fastq must be in FQDIR)
 DRY-RUN           -n : Set -n if you only want to create pipeline directory structure, copy all files to ctg-projects, but not start pipeline. Good if you want to modify config etc manually for this project before starting nextflow.
 HELP              -h : print help message
  
- 
+```
+
 ***Run driver with default settings***
 This requires the current files and directories to be in correct name and location:
 - `CTG_SampleSheet.csv` in runfolder
@@ -165,33 +194,6 @@ visium-10x-driver -f /path/to/imagedir
    - in which qc output of pipeline is copied 
 4. Checks if .gpr files exists for all slides specified in slide_area.csv.
 5. Starts pipe-visium-10x
-
-## Pipeline steps:
-
-Spaceranger version: spaceranger v1.2.2
-
-* `Demultiplexing` (spaceranger mkfastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/mkfastq), and tag barcodes.
-* `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).
-* `Align` + `Counts` (spaceranger count): Aligns fastq files to reference genome, generate spatial feature counts, perform secondary analysis such as clustering and generates the cloupe files (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count). Using 
-* `Aggregation` (spaceranger aggr): **Not yet supported.** Automatically creates the input csv pointing to molecule_info.h5 files for each sample to be aggregated and executes aggregation (https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/aggregate). 
-* `multiQC`: Compile fastQC and spaceranger count metrics in multiqc report
-* `md5sum`: md5sum of all generated files
-
-
-## Output:
-* ctg-PROJ_ID-output
-    * `qc`: Quality control output. 
-        * cellranger metrics: Main metrics summarising the count / cell output 
-        * fastqc output (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
-        * multiqc output: Summarizing FastQC output and demultiplexing (https://multiqc.info/)
-    * `fastq`: Contains raw fastq files from cellranger mkfastq.
-    * `count`: Cellranger count output. Here you find gene/cell count matrices, secondary analysis output, and more. Please go to https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/using/count for more information on the output files.
-    * `summaries`: 
-        * web-summary files which provide an overview of essential metrics from the 10x run. 
-        * cloupe files which can be used to explore the data interactively in the Loupe browser (https://support.10xgenomics.com/spatial-gene-expression/software/visualization/latest/what-is-loupe-browser)  
-    * `aggregate`:
-        * Output from cellranger aggregation. 
-    * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
 
 
 
