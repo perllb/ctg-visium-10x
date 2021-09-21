@@ -147,7 +147,7 @@ if [ -f $imagedir/slide_area.csv ]; then
 		echo "> To add new gpr, download from 10x webpage"
 		exit_abnormal ;
 	    else
-		echo "> $gpr: Slide .gpr file is in reference: $slidedir/$gpr.gpr."
+		echo " - $gpr: Slide .gpr file is in reference: $slidedir/$gpr.gpr."
 	    fi
 	fi
 	idx=1
@@ -252,7 +252,7 @@ cp -r $ctg_bin $projdir/
 
 # Copy imagedir to project folder
 echo "> Copying imagedir $imagedir to project dir"
-cp -r $imagedir $projdir
+rsync -av --progress $imagedir $projdir
 baseimagedir=$(basename $imagedir)
 cpimagedir=$projdir/$baseimagedir
 

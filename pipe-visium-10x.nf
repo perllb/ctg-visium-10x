@@ -98,6 +98,8 @@ python $basedir/bin/ctg-parse-samplesheet.10x.py -s $newsheet -o $demuxsheet -i 
 // Run mkFastq
 process mkfastq {
 
+	tag "$metaid"
+
 	input:
         val sheet from demux_sheet
 
@@ -109,13 +111,13 @@ process mkfastq {
 	"""
 	
 	spaceranger mkfastq \
-    --id=$metaid \
-    --run=$runfolder \
-    --samplesheet=$sheet \
-    --jobmode=local \
-    --localmem=100 \
-    --localcores=${task.cpus} \
-    --output-dir $fqdir 
+	    --id=$metaid \
+    	    --run=$runfolder \
+	    --samplesheet=$sheet \
+	    --jobmode=local \
+            --localmem=100 \
+            --localcores=${task.cpus} \
+            --output-dir $fqdir 
 
 	"""
 }
@@ -123,7 +125,7 @@ process mkfastq {
 process count {
 
 	publishDir "${cntdir}", mode: "move", overwrite: true
-	tag "$sid"
+	tag "${sid}_${metaid}"
 
 	input: 
 	val x from  srcount_x
@@ -150,10 +152,10 @@ process count {
 
 	 spaceranger count \
              --id=${sname} \
-             --fastqs=${fqdir}/$projid/$sid/ \
+             --fastqs=${fqdir}/$projid/ \
 	     --project=$projid \
              --sample=$sname \
-             --image=${imdir}/rotated/${sname}.tif \
+             --image=${imdir}/${sname}.tif \
              --slidefile=${slideref}/${slide}.gpr \
              --slide=$slide \
              --area=$area \
@@ -182,7 +184,7 @@ process count {
 
 process fastqc {
 
-	tag "$sid" 
+	tag "${sid}_${metaid}" 
 
 	input:
 	val x from fqc_x
@@ -204,6 +206,8 @@ process fastqc {
 }
 
 process multiqc {
+
+    tag "${projid}" 
 
     input:
     val projid from mqc_cha.unique()
